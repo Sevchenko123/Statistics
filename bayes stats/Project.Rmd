@@ -1,0 +1,169 @@
+---
+title: "Bayesian modeling and prediction for movies"
+output: 
+  html_document: 
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+---
+
+## Setup
+
+### Load packages
+
+```{r load-packages, message = FALSE}
+library(ggplot2)
+library(dplyr)
+library(statsr)
+library(BAS)
+```
+
+### Load data
+
+```{r load-data}
+load("movies.Rdata")
+```
+
+* * *
+
+## Part 1: Data
+
+The data set is comprised of 651 randomly sampled movies produced and released before 2016. So we can generalize the results which we obtain for the research question to all the movies in the United States (the condition of random sampling is satisfied). But on the other hand, we cannot make causal inference from this data as the condition of random assignment is not satisfied. Hence the results which we will get from analyzing the research question is generalizable to the entire set of movies in the US but not causal. There could be some bias as the dataset contains movies from 1970-2014, so movies data outside these years' range is not included in this study.
+
+* * *
+
+## Part 2: Data manipulation
+
+As per the project requirement I have created the new variables from the existing ones using mutate function of dplyr package.
+
+```{r,warning=FALSE}
+movies <- mutate(movies,feature_film=ifelse(title_type=="Feature Film", "Yes","No"))
+movies <- mutate(movies,drama=ifelse(genre=="Drama", "Yes","No"))
+movies <- mutate(movies,mpaa_rating_R=ifelse(mpaa_rating=="R", "Yes","No"))
+movies <- mutate(movies,oscar_season=ifelse(thtr_rel_month==10|thtr_rel_month==11|thtr_rel_month==12,"Yes","No"))
+movies <- mutate(movies,summer_season=ifelse(thtr_rel_month==5|thtr_rel_month==6|thtr_rel_month==7, "Yes","No"))
+```
+
+* * *
+
+## Part 3: Exploratory data analysis
+
+The following boxplot shows the audience score as per whether the MPAA movie rating was R or not. The boxplot shows the median audience score of movies which were not rated as R to be slightly higher than the movies rated as R.
+
+```{r,warning=FALSE}
+ggplot(movies,aes(x=mpaa_rating_R,y=audience_score))+geom_boxplot(color='black',fill=c('indianred','blueviolet'))+theme_bw()+labs(x="MPAA R Ratings",y="Audience Score")
+```
+
+Lets view some summary statistics for the same. As shown in the following dataframes the movies rated R had mean and median audience score less as compared to the movies not rated R. 
+
+```{r,warning=FALSE}
+movies %>% filter(mpaa_rating=='R') %>% summarise(Mean_R = mean(audience_score), Median_R = median(audience_score))
+movies %>% filter(mpaa_rating!='R') %>% summarise(Mean_notR = mean(audience_score), Median_notR = median(audience_score))
+```
+
+Next we look at the boxplot of audience scores as per whether the type of movie is feature film or other type. As seen in the boxplot the median audience scores for the movies which are not feature films is much higher as compared to movies which are feature films. 
+
+```{r,warning=FALSE}
+ggplot(movies,aes(x=feature_film,y=audience_score))+geom_boxplot(color='black',fill=c('gray','steelblue'))+theme_bw()+labs(x="Feature Film",y="Audience Score")
+```
+
+We can also look at the distributions of audience scores as per the movie type.
+
+```{r,warning=FALSE}
+ff <- movies %>% filter(feature_film=='Yes')
+other <- movies %>% filter(feature_film=="No")
+```
+
+The distribution of audience scores for feature film looks slightly left skewed, whereas the distribution of audience scores for non feature films look roughly bimodal except for the two outliers which received a score of one.
+
+```{r,warning=FALSE}
+ggplot(ff,aes(x=audience_score))+geom_histogram(color="black",fill="steelblue")+theme_bw()+labs(x="Audience Scores",y="Total")
+ggplot(other,aes(x=audience_score))+geom_histogram(color="black",fill="gray")+theme_bw()+labs(x="Audience Scores",y="Total")
+```
+
+Now lets look at some summary statistics. As shown in the dataframe  the mean and median audience scores are less for feature films as compared to non feature films. 
+
+```{r,warning=FALSE}
+movies %>% filter(title_type=='Feature Film') %>% summarise(Mean_FF = mean(audience_score), Median_FF = median(audience_score))
+movies %>% filter(title_type!='Feature Film') %>% summarise(Mean_notFF = mean(audience_score), Median_notFF = median(audience_score))
+```
+
+Finally lets see the boxplot of audience scores as per whether the genre of movie was drama or not. As seen in the boxplot the median audience scores of movies having genre drama was more as compared to non drama movies.
+
+```{r,warning=FALSE}
+ggplot(movies,aes(x=drama,y=audience_score))+geom_boxplot(color='black',fill=c('brown','green'))+theme_bw()+labs(x="Drama",y="Audience Score")
+```
+
+Lets see the summary statistics of the same. As per the dataframe shown below the mean and median audience scores were higher for movie with genre drama as compared to movies which were non drama.
+
+```{r,warning=FALSE}
+movies %>% filter(genre=='Drama') %>% summarise(Mean_D = mean(audience_score), Median_D = median(audience_score))
+movies %>% filter(genre!='Drama') %>% summarise(Mean_notD = mean(audience_score), Median_notD = median(audience_score))
+```
+
+
+* * *
+
+## Part 4: Modeling
+
+Lets create a full model based on all the given explanatory variables. The BIC of this model is 4932.359. Now lets use the stepAIC function in R to choose the best model.
+
+```{r,warning=FALSE}
+full_model <- lm(audience_score ~ feature_film+drama+runtime+mpaa_rating_R+thtr_rel_year+oscar_season+summer_season+imdb_rating+imdb_num_votes+critics_score+best_pic_win+best_actor_win+best_actress_win+best_dir_win+top200_box+best_pic_nom, data = movies)
+summary(full_model)
+BIC(full_model)
+```
+
+The final model selected contains the variables runtime, imdb rating and critics score of the movie to predict the audience score. All the other variables are excluded. The BIC is 3020.53 of the final model.
+
+```{r,warning=FALSE}
+library(MASS)
+final_model <- stepAIC(full_model, k=log(651), data=na.omit(movies),direction = "backward")
+```
+
+Now lets see the summary statistics of the final model.
+
+```{r,warning=FALSE}
+summary(final_model)
+```
+
+
+Finally lets look at the diagnostic plots to examine the residuals of the final model. The residuals look normally distributed with slightly longer tail at the right. Thus we can assume the conditions for constant variablity and residuals being normally distributed are satisfied.
+
+```{r,warning=FALSE}
+ggplot(data = final_model, aes(x = .fitted, y = .resid)) +
+  geom_point(color="red",pch=19) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  xlab("Fitted values") +
+  ylab("Residuals")+theme_bw()
+```
+
+```{r,warning=FALSE}
+ggplot(data = final_model, aes(x = .resid)) +
+  geom_histogram(color="black",fill="red") +
+  xlab("Residuals")+theme_bw()
+```
+
+* * *
+
+## Part 5: Prediction
+
+Now lets use a movie for predicting its audience score. I chose Conjuring 2 movie which recently released and found out all the neccesary details to predict the audience score based on our model. The audience score for Conjuring 2 is 84, lets see what the model predicts.
+
+```{r,warning=FALSE}
+conjuring2 <- data.frame(runtime=134,imdb_rating=7.8,critics_score=65)
+```
+
+```{r,warning=FALSE}
+predict(final_model,conjuring2, interval = "prediction", level = 0.95)
+```
+
+So the final model predicts the audience score of almost 81 for the movie Conjuring 2 which is very close to the true audience score of 84. The 95% confidence interval contains the true audience rating of 84. 
+
+* * *
+
+## Part 6: Conclusion
+
+Out of all the possible variables the final model selected as per the BIC criterion contain the variables runtime, imdb rating and critics score of the movie to predict the audience score. It has the lowest possible BIC from all the models. 
+
+Shortcomings of this project could be exploring different types of model selection methods by tweaking the direction parameter in the stepAIC function, for example one other way of model selection could have been specifying the direction parameter as forward direction which I did not explore.

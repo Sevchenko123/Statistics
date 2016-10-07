@@ -1,0 +1,119 @@
+---
+title: "Exploring the BRFSS data"
+output: 
+  html_document: 
+    fig_height: 6
+    highlight: pygments
+    theme: spacelab
+---
+
+## Setup
+
+### Load packages
+
+```{r load-packages, message = FALSE}
+library(ggplot2)
+library(dplyr)
+library(knitr)
+library(markdown)
+```
+
+### Load data
+
+```{r load-data}
+load("Project.RData") # Load the BRFSS 2013 Data
+str(brfss2013) # Taking a look at the variables at a glance 
+```
+
+
+
+* * *
+
+## Part 1: Data
+
+The Behavioral Risk Factor Surveillance System (BRFSS) is the nation's premier system of health-related telephone surveys that collect state data about U.S. residents regarding their health-related risk behaviors, chronic health conditions, and use of preventive services. Established in 1984 with 15 states, BRFSS now collects data in all 50 states as well as the District of Columbia and three U.S. territories. BRFSS completes more than 400,000 adult interviews each year, making it the largest continuously conducted health survey system in the world. 
+
+As the data is being randomly collected from all the 50 states of USA including D.C. and 3 territories we can generalize the results which we obtain for the research questions to the overall population of the United States (the condition of random sampling is satisfied). But on the other hand, we cannot make causal inference from this data as we do not know whether random assignment of the samples was done or not (the condition of random assignment is not satisfied). Hence the results which we will get from analyzing these research questions are generalizable to the entire US population but not causal. 
+
+* * *
+
+## Part 2: Research questions
+
+**Research quesion 1: Is there a correlation between people's general health to their mental health based on their gender and with the fact that they have health coverage ?  **
+
+It is an important question because it tells us about whether a person's general health (physical health) and mental health conditions are correlated. If that is the case then proper precautions can be undertaken in case of poor general or mental health.
+
+**Research quesion 2: What is the Life satisfaction level based on the gender of a person ?**
+
+This question is important as it sheds light on what is the general life satisfaction of the US population and does gender has anything associated with it. 
+
+**Research quesion 3: What is the distribution of the physical excercise that a person does based on his/her gender and what association does that have to the fact that doctor suggests them to reduce weight ? (possibly for arthritis problems) **
+
+Obesity is one of the biggest challenge in the United States. So, this question gives some insight about ways to deal with weight problems, by studying correlation between minutes spent on exercising and whether being advised for weight reduction.
+
+* * *
+
+## Part 3: Exploratory data analysis
+
+**Research quesion 1:**
+```{r,warning=FALSE}
+r1 <- brfss2013 %>% filter(!is.na(menthlth),!is.na(genhlth),!is.na(sex)) # remove na values 
+```
+
+```{r,warning=FALSE}
+brfss2013 %>% group_by(sex) %>% summarise(count = n())
+```
+The Dataset has more females than males. Approximately 41% of the total population are males and 59% are females.
+
+```{r,warning=FALSE}
+brfss2013 %>% group_by(genhlth) %>% summarise(count = n())
+```
+As per the data around 6% of people have poor general health. 
+
+```{r,warning=FALSE}
+#ggplot(r1,aes(x=hlthpln1,fill=sex))+geom_bar(position="dodge",colour='black')+facet_wrap(~genhlth,ncol=5)+theme_bw()+labs(x="Health Plan",y="Number of People")+labs(title="General Health")
+ggplot(r1,aes(x=sex,y=menthlth,fill=sex))+geom_boxplot(outlier.shape =NA)+theme_bw()+facet_wrap(~genhlth,ncol=5)+scale_fill_manual(values=c("firebrick1","darkslateblue"))+labs(y="Number of Days Mental Health not good",x="Gender",title="General Health")
+```
+
+The above plot shows the relation between general and mental health of people based on their gender. As the data is being randomly collected from all the 50 states of USA including D.C. and 3 territories we can generalize this result to the overall population(the condition of random sampling is satisfied). We can infer from this data, that there is indeed a correlation between number of days mental health is not good to the general health of the people. As the plot clearly shows the number of days mental health was not good was more for the people having poor general health as compared to those who had better general health. Those who had excellent general health did not have even a single day where their mental health was not good. But from this findings we cannot make a causal inference that poor general health causes poor mental health or vice versa, as we don't have any information that whether random assignment was done as samples could behave differently under different conditions and therefore need to be randomly assigned.
+
+**Research quesion 2:**
+
+```{r,warning=FALSE}
+r2 <- brfss2013 %>% filter(!is.na(lsatisfy), !is.na(sex)) # remove na values
+```
+
+```{r,warning=FALSE}
+brfss2013 %>% group_by(lsatisfy) %>% summarise(count = n())
+```
+The table shows the life satisfaction level of all the people from the data. We dont have information of life satisfaction level of about 98% of people, but based on the data we have only around 7% of people who are dissatisfied or very dissatisfied with their lives. 
+
+```{r,warning=FALSE}
+table(brfss2013$sex,brfss2013$lsatisfy)
+```
+This table shows the life satisfaction level of people as per considering their gender as well. One interesting finding from this data is that around 7% of females and 6% of males are dissatisfied or very dissatisfied with their lives. This suggest slightly more number females are dissatisfied or very dissatisfied with their lives than males.
+
+```{r,warning=FALSE}
+ggplot(r2,aes(x=lsatisfy, fill=sex))+geom_bar(colour='black',position='dodge')+ylim(0,6000)+theme_bw()+scale_fill_manual(values=c("IndianRed", "SteelBlue"))+labs(x="Life Satisfaction",y="Number of People")
+```
+
+The above plot shows the satisfaction level of people based on gender. As the data has been randomly sampled we can generalize this result to the overall population. From this plot we can infer that slightly more number of females are not satisfied with their lives as compared to males. But we cannot make a causal inference as we dont know whether random assignment was done.
+
+
+**Research quesion 3:**
+
+```{r,warning=FALSE}
+r3 <- brfss2013 %>% filter(!is.na(sex), !is.na(exerhmm2), !is.na(arthwgt)) # remove na values 
+```
+
+```{r,warning=FALSE}
+r4 <- brfss2013 %>% filter(!is.na(sex), !is.na(arthwgt))
+r4 %>% group_by(arthwgt,sex) %>% summarise(count = n())
+```
+The data shows around 36% of females are advised by the doctors to lose weight for arthiritis or joint symptoms and around 33% of males are advised to do the same. Note that this data is after eliminating the NA values. So, this also suggest a slightly more number of females are cautioned about their weights as compared to males and it makes sense as females on average have more body fat percentage levels than males.
+
+```{r,warning=FALSE}
+ggplot(r3,aes(x=sex,y=exerhmm2,fill=sex))+geom_boxplot(outlier.shape = NA)+theme_bw()+facet_wrap(~arthwgt,ncol=3)+scale_fill_manual(values=c("firebrick1","blueviolet"))+labs(y="Excercise in minutes",x="Gender")
+```
+
+This plot clearly shows that people who had not been cautioned about their weight by doctors are on an average spending more minutes in excercise than those who have been advised to reduce weight. The median for minutes spent in exercising for those who havent been cautioned about the weight is more than those who have been cautioned. This again shows a correlation between minutes spent exercising and whether being advised for reducing weight. We can generalize this result to the population at large and infer that people who are not being advised for weight reduction will have on average more minutes spent in exercising than those who have been advised for weight reduction. But based on the study we cannot infer a causal relationship.

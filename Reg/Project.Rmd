@@ -1,0 +1,202 @@
+---
+title: "Modeling and prediction for movies"
+output: 
+  html_document: 
+    fig_height: 6
+    fig_width: 6
+    highlight: pygments
+    theme: spacelab
+---
+
+## Setup
+
+### Load packages
+
+```{r load-packages, message = FALSE}
+library(ggplot2)
+library(dplyr)
+library(statsr)
+library(GGally)
+library(leaps)
+library(MASS)
+```
+
+### Load data
+
+Make sure your data and R Markdown files are in the same directory. When loaded
+your data file will be called `movies`. Delete this note when before you submit 
+your work. 
+
+```{r load-data}
+load("movies.Rdata")
+```
+
+
+* * *
+
+## Part 1: Data
+The data set is comprised of 651 randomly sampled movies produced and released before 2016. So we can generalize the results which we obtain for the research question to all the movies in the United States (the condition of random sampling is satisfied). But on the other hand, we cannot make causal inference from this data as the condition of random assignment is not satisfied. Hence the results which we will get from analyzing the research question is generalizable to the entire set of movies in the US but not causal. There could be some bias as the dataset contains movies from 1970-2014, so movies data outside these years' range is not included in this study.
+
+* * *
+
+## Part 2: Research question
+
+I am interested to predict the rating of a movie based on various predictors in the dataset. I will use a backward elimination model selection method, where I will start with a full model with all predictors and drop one predictor at a time until a parsimonious model is reached. I have an intuition that some of the variables are highly correlated, for example variables like imdb rating, critics score, audience score. Lets explore them later. The results from this analysis could be generalizable to all the movies, but causal inference cannot be made.
+
+* * *
+
+## Part 3: Exploratory data analysis
+
+First lets look at the summary statistics of all the variables in the dataset
+```{r}
+summary(movies)
+```
+
+Now lets do some exploratory data analysis.
+
+1. I am interested to find the imdb rating as per different movie categories. 
+
+```{r}
+doc <- movies%>%filter(title_type=='Documentary')
+ff <- movies%>%filter(title_type=='Feature Film')
+tv <- movies%>%filter(title_type=='TV Movie')
+```
+
+```{r}
+doc %>% summarise(mean=mean(doc$imdb_rating),median=median(doc$imdb_rating),std_dev=sd(doc$imdb_rating))
+ff %>% summarise(mean=mean(ff$imdb_rating),median=median(ff$imdb_rating),std_dev=sd(ff$imdb_rating))
+tv %>% summarise(mean=mean(tv$imdb_rating),median=median(tv$imdb_rating),std_dev=sd(tv$imdb_rating))
+```
+
+```{r}
+ggplot(movies,aes(x=factor(title_type),y=imdb_rating))+geom_boxplot(color='black',fill=c('firebrick1','darkslateblue','green'))+theme_bw()+labs(y="Imdb Rating",x="Title Type")
+```
+
+As per the results Documentary movies have garnered higher imdb ratings with mean rating of 7.67 followed by feature films with mean imdb rating of 6.38. There are many outliers for feature film type having the ratings between 2-4 which suugests that feature film movie type is likely to be rated on a lower side on an average than documentary film But there is one movie in feature film type which stands out on top with a rating of 9, it would be interesting to investigate this movie further. The TV movie type on the other hand have been rated the lowest with average rating of 6.04, but we may argue that we dont have enough data for this movie type. 
+
+* * *
+
+2. Now lets see, relationship between runtime of a movie to its imdb rating. Does longer movie runtime garners greater ratings ?
+
+```{r}
+ggplot(movies,aes(x=runtime,y=imdb_rating))+geom_point(pch=19,color='black')+geom_smooth(method=lm,color='red',se=F)+theme_bw()+labs(x="Runtime",y="IMDB Rating")
+
+r1 <- movies %>% filter(!is.na(imdb_rating),!is.na(runtime)) # remove na values 
+ cor(r1$runtime,r1$imdb_rating)                              # find correlation between these two variables
+```
+
+As per the result there appears to be moderately strong correlation between the two variables. The scatterplot shows some outliers with high movie runtime and ratings.
+
+* * * 
+
+3. Now lets find out what relationship exist between imdb ratings and whether a movie is in top 200 box office list or not. 
+
+```{r}
+ggplot(movies,aes(x=top200_box,y=imdb_rating))+geom_boxplot(color='black',fill=c('red','blue'))+theme_bw()+labs(x="Top 200 box office list",y="Imdb Ratings")
+```
+
+It appears that movies which featured in top 200 box office list have higher ratings on an average than the movies which did not appear in top 200, which is quite intuitive.
+
+* * *
+
+4. Next lets find out what is the relationship between mpa rating to the imdb ratings 
+
+```{r}
+ggplot(movies,aes(x=mpaa_rating,y=imdb_rating))+geom_boxplot(color='black',fill=c('red','blue','green','yellow','pink','orange'))+theme_bw()+labs(x="MPAA Ratings",y="Imdb Ratings")+coord_flip()
+```
+
+As per the boxplot 'Unrated' movies have higher ratings on an average than other movies.
+
+* * *
+
+5. Finally lets find out the variables which I suspected to be highly correlated.
+
+```{r}
+my_fn <- function(data, mapping, ...){
+  p <- ggplot(data = data, mapping = mapping) + 
+    geom_point(pch=19,alpha=0.5) + 
+    geom_smooth(method=lm, fill="red", color="red", se=FALSE, ...) +
+    theme_bw()
+  p
+}
+g = ggpairs(movies,columns = c(13,14,16,18), lower = list(continuous = my_fn))
+g
+```
+
+As suspected imdb rating is highly correlated with critics score and audience score with a correlation coefficient of 0.765 and 0.865 respectively which is quite high. So including all these variables in multiple regressin model will not be a good idea as inclusion of collinear predictors bring nothing new. 
+
+* * *
+
+## Part 4: Modeling
+
+First lets use all the appropriate features from the dataset to predict imdb ratings.
+
+```{r}
+model1 <- lm(imdb_rating ~ title_type+genre+runtime+mpaa_rating+thtr_rel_year+thtr_rel_month+thtr_rel_day+dvd_rel_year+dvd_rel_month+dvd_rel_day+imdb_num_votes+critics_rating+critics_score+audience_rating+audience_score+best_pic_nom+best_pic_win+best_actor_win+best_actress_win+best_dir_win+top200_box, data=movies)
+```
+ 
+```{r}
+step <- stepAIC(model1, direction="backward")
+step$anova # display results
+```
+Based on the AIC metric the final model is chosen with only 9 features compared to initial full model with 21 variables. Lets explore more using these 9 features.
+
+```{r}
+model2 <- lm(imdb_rating ~ genre + runtime + thtr_rel_month + dvd_rel_month + dvd_rel_day + imdb_num_votes + critics_rating + critics_score + audience_rating + audience_score + best_pic_nom, data=movies)
+```
+
+```{r}
+summary(model1)
+summary(model2)
+```
+Based on the output the R squared of model2 (9 variables) is improved slightly as compared to the full model. Although there are some variables which does not look significantly strong like dvd release day or month but the overall adjusted R squared of the model looks good, so we dont eliminate those variables from the final model. On the other hand the variables like audience score, audience rating, critics score, critics rating, imdb votes, runtime, genre looks significantly strong for predicting the imdb ratings of a movie. Lets see the diagnostics plots of the final model
+
+```{r}
+ggplot(data = model2, aes(x = .fitted, y = .resid)) +
+  geom_point(color="red",pch=19) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  xlab("Fitted values") +
+  ylab("Residuals")+theme_bw()
+```
+
+The residuals appear to be scattered randomly around 0 line with few outliers below -2. So the constant variability condition is satisfied. 
+
+```{r}
+ggplot(data = model2, aes(x = .resid)) +
+  geom_histogram(color="black",fill="red") +
+  xlab("Residuals")+theme_bw()
+```
+
+The residual histogram looks fairly symmetric (nearly normal) with slightly longer tail on the left. 
+
+```{r}
+ggplot(data = model2, aes(sample = .resid)) +
+  stat_qq(color="red",pch=19)+theme_bw()
+```
+
+The quantile-quantile plot tells that the residuals look slightly left skewed. 
+Thus all conditions are satisfied.
+
+* * *
+
+## Part 5: Prediction
+
+```{r}
+conjuring2 <- data.frame(genre="Horror",runtime=134,thtr_rel_month=6,dvd_rel_month=6,dvd_rel_day=13,imdb_num_votes=63237,critics_rating="Fresh",critics_score=65,audience_rating="Upright",audience_score=84,best_pic_nom="no")
+```
+
+I chose Conjuring 2 movie which recently released and found out all the neccesary details to predict the imdb rating based on our model. The imdb rating for Conjuring 2 is 7.8, lets see what the model predicts.
+
+```{r}
+predict(model2,conjuring2, interval = "prediction", level = 0.95)
+```
+
+The model predicts a rating of 7.27 based on the features provided and with a 95% confidence interval predicts that the rating is between 6.37 to 8.17. 
+
+* * *
+
+## Part 6: Conclusion
+
+Thus the final model which I used had only 9 variables out of all the variables and does a good job with adjusted R squared of 0.83. This model can be used to predict the imdb ratings of a movie based on the 9 features. The variables like audience score, audience rating, critics score, critics rating, imdb votes, runtime, genre in this model looks significantly strong for predicting the imdb ratings of a movie. 
+
+Shortcomings of this project could be exploring different types of model selection methods, for example one other way of model selection could have been using forward selection method which I did not explore. 

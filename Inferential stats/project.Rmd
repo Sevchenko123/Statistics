@@ -1,0 +1,107 @@
+---
+title: "Statistical inference with the GSS data"
+output: 
+  html_document: 
+    fig_height: 5
+    fig_width: 6.5
+    highlight: pygments
+    theme: spacelab
+---
+
+## Setup
+
+### Load packages
+
+```{r load-packages, message = FALSE}
+library(ggplot2)
+library(dplyr)
+library(statsr)
+library(knitr)
+library(markdown)
+```
+
+### Load data
+
+```{r load-data}
+load("gss.Rdata")
+```
+
+* * *
+
+## Part 1: Data
+
+The GSS gathers data on contemporary American society in order to monitor and explain trends and constants in attitudes, behaviors, and attributes.  Hundreds of trends have been tracked since 1972. In addition, since the GSS adopted questions from earlier surveys, trends can be followed for up to 70 years.
+
+The GSS contains a standard core of demographic, behavioral, and attitudinal questions, plus topics of special interest. Among the topics covered are civil liberties, crime and violence, intergroup tolerance, morality, national spending priorities, psychological well-being, social mobility, and stress and traumatic events.
+
+Altogether the GSS is the single best source for sociological and attitudinal trend data covering the United States. It allows researchers to examine the structure and functioning of society in general as well as the role played by relevant subgroups and to compare the United States to other nations.
+
+As the data is collected through surveys we can say that the condition of random sampling is satisfied as random people are interviewed and their responses are collected from 1972 till 2012. So, the results which we will get from analyzing the research question is generalizable to the entire US population. But we are not sure about whether random assignment was done or not therefore, we cannot make any causal inference. 
+
+* * *
+
+## Part 2: Research question
+
+Does the data provide convincing evidence about whether there is relationship between ethnicity/race and the degree of education obtained ? 
+
+I am interested to find out whether there exist a relationship between the race and the degree of education of the people. If that is indeed the case then special measures could be adopted to promote education to that particular race which looks deprived of higher education.
+
+* * *
+
+## Part 3: Exploratory data analysis
+
+First lets summarise the race and degree variables of the data.
+
+```{r,warning=FALSE}
+table(gss$race)
+```
+
+As per the data around 81% of the people are white, 14% are black and rest 5% belong to other race.
+
+```{r,warning=FALSE}
+table(gss$degree)
+```
+
+As per the data only 9% of total people from the sample are graduate, 14% have obtained bachelor's degree, 5% have been in junior college, 51% or majority of them are high school graduate and 21% are Lt High school. 
+
+```{r,warning=FALSE}
+table(gss$race,gss$degree)
+```
+
+The above table shows contingency table of both these variables at a glance. One key observation is that around 7% of all the white people have a graduate degree compared to only 3% of all the black people and 9% of all the other race. 
+
+```{r,warning=FALSE}
+r1 <- gss %>% filter(!is.na(degree), !is.na(race)) # remove na values
+```
+
+```{r,warning=FALSE}
+ggplot(r1, aes(x=degree,fill=race))+geom_bar(position = position_dodge(),color = "black")+theme_bw()+scale_fill_brewer(palette=7)+labs(x="Degree Obtained",y="Total People")
+```
+
+The above barplot shows at a glance the people based on their ethnicity/race and the highest education degree they obtained.
+
+* * *
+
+## Part 4: Inference
+
+To answer this research question, I will use hypothesis testing and use Chi-Square Independence test as it involves two categorical variables (both variables have greater than 2 levels). All the conditions for chi square test are satisfied so we can use theoretical method rather than simulation based techniques. The conditions are :-
+
+1. Sampled observations are independent. (independence)
+2. Each cell have at least 5 cases.
+3. Random Sampling. 
+
+I have framed the following hypotheses :- 
+
+Ho : Nothing going on, Race and Degree of people are independent of each other.
+
+Ha : Something is going on, Race and Degree of people are not independent and are associated in some way.
+
+```{r,warning=FALSE}
+chi_sq_data <- table(r1$race,r1$degree)
+```
+
+
+```{r,warning=FALSE}
+chisq.test(chi_sq_data)
+```
+Based on the data, I calculated the test statistic and the p-value which is less than **2.2e-16** which is very very small. So, I reject null hypothesis that race and degree of education are independent of each other, in favor of alternative hypothesis. The data thus provide convincing evidence that race and degree of education of people are associated. As the data is collected by carrying interviews of random samples so we can generalize this result or in other words infer this result to the entire US population that the race and degree of education of the US population is associated. 
