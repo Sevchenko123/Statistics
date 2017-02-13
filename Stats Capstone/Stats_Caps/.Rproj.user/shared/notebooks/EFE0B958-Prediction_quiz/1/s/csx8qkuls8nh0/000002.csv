@@ -1,0 +1,7 @@
+"0","pred.test.MPM <- predict(model.bas, ames_test, "
+"0","                    estimator=""MPM"", "
+"0","                    prediction=TRUE, se.fit=TRUE)"
+"0","resid.MPM = ames_test$price - exp(pred.test.MPM$fit)"
+"0","plot(ames_test$price, resid.MPM, "
+"0","     xlab=""Price"","
+"0","     ylab=""Residuals"")"

@@ -1,0 +1,2 @@
+"0","par(mfrow=c(1,2))"
+"0","ggplot(ames_train,aes(x=Kitchen.Qual,y=price))+geom_boxplot(color=c('black','blue','red','brown','darkgreen'))+theme_minimal()+labs(x=""Kitchen Quality"",y=""Price"")"

@@ -1,0 +1,2 @@
+"0","# type your code for Question 2 here, and Knit"
+"0","ames_train %>% group_by(Neighborhood) %>% summarise(med=median(price))%>%arrange((med)) # Least expensive "

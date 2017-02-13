@@ -1,0 +1,1 @@
+"0","ggplot(ames_train,aes(x=Heating.QC,y=price))+geom_boxplot(color=c('black','blue','red','brown','darkgreen'))+theme_minimal()+labs(x=""Heating Quality"",y=""Price"")"

@@ -1,0 +1,7 @@
+"0","pred.test.HPM <- predict(model.bas, newdata = ames_test, estimator=""HPM"")"
+"0","pred.HPM.rmse <- sqrt(mean((exp(pred.test.HPM$fit) - ames_test$price)^2))"
+"0","pred.HPM.rmse"
+"1","[1]"
+"1"," 78388.15"
+"1","
+"

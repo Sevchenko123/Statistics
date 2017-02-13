@@ -1,0 +1,3 @@
+"0","# type your code for Question 1 here, and Knit"
+"0","ames_train <- ames_train %>% mutate(house_age = Yr.Sold - Year.Built)  # create a new column specifying house age"
+"0","ggplot(data = ames_train, aes(x = house_age))+geom_histogram(color=""white"",fill=""red"",bins=30)+xlab(""House Age"")+ylab(""Number of Houses"")+theme_bw()"

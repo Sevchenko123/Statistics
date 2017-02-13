@@ -1,0 +1,6 @@
+"0","# type your code for Question 7 here, and Knit"
+"0","ggplot(data = model2, aes(x = .fitted, y = .resid)) +"
+"0","  geom_point(color=""red"",pch=19) +"
+"0","  geom_hline(yintercept = 0, linetype = ""dashed"") +"
+"0","  xlab(""Fitted values"") +"
+"0","  ylab(""Residuals"")+theme_bw()"

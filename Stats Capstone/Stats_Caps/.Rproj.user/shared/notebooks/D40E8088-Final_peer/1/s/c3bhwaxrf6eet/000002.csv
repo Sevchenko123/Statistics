@@ -1,0 +1,7 @@
+"0","pred.test.modelaic <- predict(model.AIC,newdata = ames_test)"
+"0","pred.rmse.modelaic <- sqrt(mean((exp(pred.test.modelaic)-ames_test$price)^2))"
+"0","pred.rmse.modelaic"
+"1","[1]"
+"1"," 36417.36"
+"1","
+"

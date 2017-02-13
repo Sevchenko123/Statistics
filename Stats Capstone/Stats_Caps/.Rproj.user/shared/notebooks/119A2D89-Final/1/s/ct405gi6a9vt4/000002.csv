@@ -1,0 +1,2 @@
+"0","load(""ames_validation.Rdata"")"
+"0","ames_validation <- ames_validation %>% filter(Neighborhood != ""Landmrk"")"

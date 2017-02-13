@@ -1,0 +1,1 @@
+"0","ames_train %>% group_by(Neighborhood) %>% summarise(sd=sd(price))%>%arrange(desc(sd)) # Most Heterogeneous"

@@ -1,0 +1,1 @@
+"0","ggplot(data=ames_train,aes(x=house_age))+geom_histogram(aes(y=..density..),color='black',fill='white',bins=30)+geom_density(alpha=0.2,fill='red')+theme_bw()+xlab(""House Age"")+ylab(""Number of Houses"")"

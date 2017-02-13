@@ -1,0 +1,4 @@
+"0","# type your code for Question 3 here, and Knit"
+"0","na_count <-sapply(ames_train, function(y) sum(length(which(is.na(y)))))"
+"0","na_count <- as.data.frame(na_count)"
+"0","na_count"

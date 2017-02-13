@@ -1,0 +1,3 @@
+"0","ggplot(data = model2, aes(x = .resid)) +"
+"0","  geom_histogram(color=""white"",fill=""red"",bins=30) +"
+"0","  xlab(""Residuals"")+theme_bw()"

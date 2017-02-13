@@ -1,0 +1,7 @@
+"0","# type your code for Question 14 here, and Knit"
+"0","r1 <- ames_train %>% filter(BsmtFin.Type.1==""Unf""| BsmtFin.Type.2==""Unf"") %>% dplyr::select(Bsmt.Unf.SF)"
+"0","mean(r1$Bsmt.Unf.SF)"
+"1","[1]"
+"1"," 605.0498"
+"1","
+"

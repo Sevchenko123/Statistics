@@ -1,0 +1,1 @@
+"0","ggplot(ames_train,aes(x=Neighborhood,y=price))+geom_boxplot(color='black',fill='red',outlier.shape=NA)+theme_bw()+labs(y=""Prices"",x=""Neighborhood"") # Boxplot"

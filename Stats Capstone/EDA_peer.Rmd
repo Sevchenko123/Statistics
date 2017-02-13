@@ -1,0 +1,192 @@
+---
+title: "Peer Assessment I"
+output:
+  html_document: 
+    pandoc_args: [
+      "--number-sections",
+    ]
+---
+
+
+First, let us load the data and necessary packages:
+
+```{r load, message = FALSE}
+load("ames_train.Rdata")
+library(MASS)
+library(dplyr)
+library(ggplot2)
+library(statsr)
+library(GGally)
+library(leaps)
+```
+
+#
+Make a labeled histogram (with 30 bins) of the ages of the houses in the data set, and describe the distribution.
+
+
+```{r Q1}
+# type your code for Question 1 here, and Knit
+ames_train <- ames_train %>% mutate(house_age = Yr.Sold - Year.Built)  # create a new column specifying house age
+ggplot(data = ames_train, aes(x = house_age))+geom_histogram(color="white",fill="red",bins=30)+xlab("House Age")+ylab("Number of Houses")+theme_bw()
+ggplot(data=ames_train,aes(x=house_age))+geom_histogram(aes(y=..density..),color='black',fill='white',bins=30)+geom_density(alpha=0.2,fill='red')+theme_bw()+xlab("House Age")+ylab("Number of Houses")
+summary(ames_train$house_age)
+```
+
+
+* * *
+
+**I calculated the age of the house as the year the house was sold minus the year the house was built (age of the house at the time of selling it). I created two histogram plots, one normal histogram plot and one with density plot where we calculate the probability densities per bin instead of counting frequency per bin. The histogram plot clearly shows an overall right skew in the age distribution of the houses. The distribution seems to be multimodal. The summary statistics also confirm the right skew as the median is less than mean. The mean age of the houses is almost 36 years and median age is 33 years. The maximum age of the houses is 136 years while the minimum age is 0 year. It is interesting to note that many houses have 0 age which means these houses are fairly new and are sold as soon as built.**
+
+
+* * *
+
+
+#
+The mantra in real estate is "Location, Location, Location!" Make a graphical display that relates a home price to its neighborhood in Ames, Iowa. Which summary statistics are most appropriate to use for determining the most expensive, least expensive, and most heterogeneous (having the most variation in housing price) neighborhoods? Report which neighborhoods these are based on the summary statistics of your choice. Report the value of your chosen summary statistics for these neighborhoods.
+
+
+```{r fig.width=14, fig.height=7, echo=FALSE }
+
+# type your code for Question 2 here, and Knit
+ames_train %>% group_by(Neighborhood) %>% summarise(med=median(price))%>%arrange((med)) # Least expensive 
+ames_train %>% group_by(Neighborhood) %>% summarise(med=median(price))%>%arrange(desc(med)) # Most expensive
+ames_train %>% group_by(Neighborhood) %>% summarise(sd=sd(price))%>%arrange(desc(sd)) # Most Heterogeneous
+
+ggplot(ames_train,aes(x=Neighborhood,y=price))+geom_boxplot(color='black',fill='red',outlier.shape=NA)+theme_bw()+labs(y="Prices",x="Neighborhood") # Boxplot
+```
+
+
+* * *
+
+**Based on the summary statistics above the least expensive neighborhood is MeadowV with median price of 85,750 dollars. The most expensive neighborhood is StoneBr with median price of 340691.50 dollars. And finally the most heterogeneous neighborhood is also StoneBr with the highest standard deviation of 123459.10 dollars.**
+
+
+
+* * *
+
+# 
+
+Which variable has the largest number of missing values? Explain why it makes sense that there are so many missing values for this variable.
+
+```{r Q3}
+# type your code for Question 3 here, and Knit
+na_count <-sapply(ames_train, function(y) sum(length(which(is.na(y)))))
+na_count <- as.data.frame(na_count)
+na_count
+```
+
+
+* * *
+
+**Based on the result Pool Quality has the highest NA values in the data. It makes sense since only the most luxurious house would have a swimming pool and most of them wont have a swimming pool. So, the pool quality variable has 997 NA values, which means only 3 houses from the entire dataset has a swimming pool.** 
+
+
+* * *
+
+#
+
+We want to predict the natural log of the home prices. Candidate explanatory variables are lot size in square feet (Lot.Area), slope of property (Land.Slope), original construction date (Year.Built), remodel date (Year.Remod.Add), and the number of bedrooms above grade (Bedroom.AbvGr). Pick a model selection or model averaging method covered in the Specialization, and describe how this method works. Then, use this method to find the best multiple regression model for predicting the natural log of the home prices.
+
+
+```{r Q4}
+# type your code for Question 4 here, and Knit
+model <- lm(log(price)~Lot.Area+Land.Slope+Year.Built+Year.Remod.Add+Bedroom.AbvGr,data=ames_train) # build a model
+step <- stepAIC(model, direction="forward") # use forward elimination method to select the best model
+step$anova # display best model based on AIC criterion
+summary(model)
+```
+
+
+* * *
+
+**As per the requirements, I made a model to predict the log prices with the mentioned explanatory variables. Then I used a forward model selection technique where you start with an empty model and add one variable at a time until a parsimonious model is reached. Thus the final model selected contains all the explanatory variables to predict log prices of the houses. The AIC of the final model selected is -2545.775.**
+
+* * *
+
+#
+
+Which home has the largest squared residual in the previous analysis (Question 4)? Looking at all the variables in the data set, can you explain why this home stands out from the rest (what factors contribute to the high squared residual and why are those factors relevant)?
+
+
+```{r Q5}
+# type your code for Question 5 here, and Knit
+# Model evaluation
+ggplot(data = model, aes(x = .fitted, y = .resid)) +
+  geom_point(color="red",pch=19) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  xlab("Fitted values") +
+  ylab("Residuals")+theme_bw()
+
+ggplot(data = model, aes(x = .resid)) +
+  geom_histogram(color="white",fill="red",bins=30) +
+  xlab("Residuals")+theme_bw()
+
+qqnorm(model$residuals,col="Red")
+qqline(model$residuals,col="black")
+
+which.min(model$residuals) # find the residual which is farthest 
+```
+```{r}
+house <- ames_train[428,]
+summary(ames_train$price)
+table(ames_train$Overall.Cond)
+table(ames_train$Overall.Qual)
+
+house$price
+house$Overall.Cond
+house$Overall.Qual
+
+```
+
+* * *
+
+**As shown in the residual plot there appears to be random scatter around 0 except for one outlier whose residual value is -2.087853. This means the model is doing good. The histogram of the residuals also show normally distributed residuals around 0 with one residual a bit far away at around -2.08. I inspected the data point which has the largest residual and I believe the model did not predict the price for this data point because the price for this house is 12789 dollars which less than the overall minimum. Also the overall condition and overall quality of this house is 2 which is very rare. So, I suspect this could be the reasons for poor prediction for this data point.**
+
+
+* * *
+
+#
+
+Use the same model selection method you chose in Question 4 to again find the best multiple regression model to predict the natural log of home prices, but this time **replacing Lot.Area with log(Lot.Area)**. Do you arrive at a model including the same set of predictors?
+
+
+```{r Q6}
+# type your code for Question 6 here, and Knit
+model2 <- lm(log(price)~log(Lot.Area)+Land.Slope+Year.Built+Year.Remod.Add+Bedroom.AbvGr,data=ames_train) # build a model
+step2 <- stepAIC(model2, direction="forward") # use forward elimination method to select the best model
+step2$anova # display best model based on AIC criterion
+summary(model2)
+```
+
+* * *
+
+**Yes I arrived at the same model even when using log(Lot.area).** 
+
+* * *
+#
+
+Do you think it is better to log transform Lot.Area, in terms of assumptions for linear regression? Make graphs of the predicted values of log home price versus the true values of log home price for the regression models selected for Lot.Area and log(Lot.Area). Referencing these two plots, provide a written support that includes a quantitative justification for your answer in the first part of question 7.
+
+```{r Q7}
+# type your code for Question 7 here, and Knit
+ggplot(data = model2, aes(x = .fitted, y = .resid)) +
+  geom_point(color="red",pch=19) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  xlab("Fitted values") +
+  ylab("Residuals")+theme_bw()
+
+ggplot(data = model2, aes(x = .resid)) +
+  geom_histogram(color="white",fill="red",bins=30) +
+  xlab("Residuals")+theme_bw()
+
+qqnorm(model2$residuals,col="Red")
+qqline(model2$residuals,col="black")
+```
+
+* * *
+
+**The above figures show the diagnostic plots for model2. The plot shows random scatter of residuals around 0 except few outliers and histogram of residuals show normally distributed residuals around 0. The second model (the one with log transformed Lot.area variable) performed just a bit better than the previous model. The summary statistics show the adjusted R squared for model2 is 0.6032 while the adjusted R squared of the previous model is 0.5598. Thus the model with log transformed Lot.area variable performs a bit better than the previous model.**
+
+
+* * *
+###
